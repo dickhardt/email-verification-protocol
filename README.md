@@ -27,7 +27,7 @@ which returns `application/json` containing the IdentityProviderWellKnown JSON o
 
 ```json
 {
-  "provider_urls: [
+  "provider_urls": [
       "https://accounts.example.com/any_file_path.json"
   ]
 }
@@ -89,6 +89,7 @@ if (credential.token )
   // send to token to server
  
 } catch ( e ) {
+   // no providers or other error
 }
 
 
@@ -119,7 +120,7 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 1. Browser fetches `accounts_endpoint` from provider
 
 ```json
-{ accounts: [
+{ "accounts": [
    {
       "id": "xyz",
       "name": "John Doe",
