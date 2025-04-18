@@ -1,6 +1,6 @@
 # verified-email-auto-fill (VEAF)
 
-verified email autofill 
+Verified Email Auto Fill 
 
 ## Provider Registration
 
