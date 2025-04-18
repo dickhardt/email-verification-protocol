@@ -5,14 +5,14 @@ Verified Email Auto Fill
 ## Provider Registration
 
 
-1. User navigates to any sub-domain on `example.com`. Eg. `accounts.example`
+1. User navigates to any sub-domain on `example.com`. Eg. `accounts.example.com`
 
 2. The page can call to register an email address it is an issuer for by calling:
 
 ```javascript
 const response = await IdentityProvider.register(
     "https://issuer.example.net",
-    "john.doe@mydomain.example"
+    "john.doe@mydomain.example" // is this useful though? Browser can learn which emails by calling accounts_endpoint 
 );
 ```
 
@@ -110,6 +110,8 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 ```
 
 8. RP Server fetches jwks values for `iss` value in SD-JWT+KB the same as in Provider Registration, and verifies the SD-JWT+KB.
+
+> Alternative - `jku` has jwks url to get keys and `jku` MUST start with `iss` string  
 
 
 ## Token Acquisistion from Provider
