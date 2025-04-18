@@ -9,8 +9,11 @@ Verified Email Auto Fill
 
 2. The page can call to register an email address it is an issuer for by calling:
 
-```
-const response = await IdentityProvider.register("https://issuer.example.net", "john.doe@mydomain.example")
+```javascript
+const response = await IdentityProvider.register(
+    "https://issuer.example.net",
+    "john.doe@mydomain.example"
+);
 ```
 
 3. The browser checks if the following DNS records exists:
@@ -72,27 +75,21 @@ RP page has the following HTML in the page:
 And has made this call which has not returned:
 
 ```js
-try(
-    const credential = await navigator.credentials.get({
-        mediation: "conditional",
-        identity: {
-          providers: [{
-            format: "vc+sd-jwt",
-            fields: ["name", "email", "picture"],
-            configURL: "https://issuer.sgo.to/fedcm.json",
-            clientId: "TODO",
-            nonce: "1234",
-          }]
-       }
-      });
-if (credential.token )
+try {
+  const {token} = await navigator.credentials.get({
+    mediation: "conditional",
+    identity: {
+      providers: [{
+        format: "vc+sd-jwt",
+        fields: ["name", "email", "picture"],
+        nonce: "1234",
+      }]
+    }
+  });
   // send to token to server
- 
 } catch ( e ) {
    // no providers or other error
 }
-
-
 ```
 
 2. User clicks in input field and browser displays selection of what could be shared. Emails that would be verified are decorated for user to understand. User selects a verified email from browser selection.
@@ -120,13 +117,13 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 1. Browser fetches `accounts_endpoint` from provider
 
 ```json
-{ "accounts": [
-   {
-      "id": "xyz",
-      "name": "John Doe",
-      "email": "john.doe@mydomain.example",
-    }
-])
+{
+  "accounts": [{
+    "id": "xyz",
+    "name": "John Doe",
+    "email": "john.doe@mydomain.example",
+  }]
+}
 ```
 
 3. Browser shows accounts metadata to autofill
@@ -139,10 +136,9 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 \\ cookies
 
 account_id=xyz&format=sd-jwt&... key binding info
-
 ```
 
-4. provider can decide to issue right away, or can tell browser to re-authenticate the user "continue_on" and browser displays popup window 
+4. provider can decide to issue right away, or can tell browser to re-authenticate the user `continue_on` and browser displays popup window 
 
 ```json
 {"token":"eyssss...."}
@@ -151,7 +147,7 @@ account_id=xyz&format=sd-jwt&... key binding info
 or
 
 ```json
-{ "continue_on":"https://issuer.example.net/login"}
+{ "continue_on": "https://issuer.example.net/login"}
 ```
 
 5. if popup window, provider calls `IdentityProvider.resolve(sd_jwt)`
