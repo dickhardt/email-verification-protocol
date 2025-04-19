@@ -42,14 +42,14 @@ which returns `application/json` containing the IdentityProviderWellKnown JSON o
 5. The browser fetches the config file listed in `provider_urls` which MUST contain:
 
 - **accounts_endpoint** - what the browser calls to get the accounts from the provider
-- **sd_assertion_endpoint - the endpoint the browser calls passing 1P cookies to obtain an SD-JWT
+- **sd_assertion_endpoint** - the endpoint the browser calls passing 1P cookies to obtain an SD-JWT
 - **jwks_uri** - a jwks file containing one or public keys
 
 ```json 
 {
   "accounts_endpoint": "https://accounts.example.com/fedcm/accounts",
   "sd_assertion_endpoint": "https://accounts.example.com/fedcm/sd-jwt",
-  "jwks_uri": "https://accounts.example.com/jwks.json"
+  "jwks_uri": "https://accounts.example.com/jwks.json" // current thinking is this is the `jku` in ID Token
 }
 ```
 
@@ -57,7 +57,7 @@ which returns `application/json` containing the IdentityProviderWellKnown JSON o
 
 The `IdentityProvider.register()` call succeeds if the DNS entry is correct and fetching the `.well-known/web-identity` provided a `provider_urls` value that contains the required `accounts_endpoint`, `sd_assertion_endpoint`, and `jwks_uri` values. 
 
-> Q: Perhaps the browser should call the `accounts_endpoint` and ensure it gets an email that matches the passed email, and then POSTS the corresponding account `id` to the `sd_assertion_endpoint` and then verifies the returned sd-jwt (since user should be logged in) verifying the `jwks_uri` has a key for the `iss` value in the sd-jwt.
+> Q: Perhaps the browser should call the `accounts_endpoint` and ensure it gets an email that matches the passed email, and then POSTS the corresponding account `id` to the `sd_assertion_endpoint` and then verifies the returned SD-JWT (since user should be logged in) verifying the `jwks_uri` has a key for the `iss` value in the SD-JWT.
 
 The browser has now registered the provider for the email `john.doe@domain.example`
 
@@ -81,7 +81,7 @@ try {
     mediation: "conditional",
     identity: {
       providers: [{
-        format: "vc+sd-jwt",
+        format: "sd-jwt",
         fields: ["name", "email", "picture"],
         nonce: "1234",
       }]
@@ -107,7 +107,7 @@ try {
 5. JS code sends `token` to RP server. 
 
 
-6. RP retrieves `iss` value from sd-jwt and disclosed email address. RP checks DNS record for email domain contains `iss` value just as browser did. 
+6. RP retrieves `iss` value from SD-JWT and disclosed email address. RP checks DNS record for email domain contains `iss` value just as browser did. 
 
 ```
 email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
@@ -115,7 +115,7 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 
 8. RP Server fetches jwks values for `iss` value in SD-JWT+KB the same as in Provider Registration, and verifies the SD-JWT+KB.
 
-> Alternative - `jku` has jwks url to get keys and `jku` MUST start with `iss` string  
+> Alternative - SD-JWT `jku` has jwks url to get keys and `jku` MUST start with `iss` string  
 
 
 ## Token Acquisistion from Provider
@@ -141,7 +141,7 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 ```
 \\ cookies
 
-account_id=xyz&format=sd-jwt&... key binding info
+account_id=xyz&format=SD-JWT&... key binding info
 ```
 
 4. provider can decide to issue right away, or can tell browser to re-authenticate the user `continue_on` and browser displays popup window 
