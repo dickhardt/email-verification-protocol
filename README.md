@@ -15,6 +15,7 @@ const response = await IdentityProvider.register(
     "john.doe@mydomain.example" // is this useful though? Browser can learn which emails by calling accounts_endpoint 
 );
 ```
+> Exploring doing this declaratively with HTTP headers and/or HTML metadata
 
 3. The browser checks if the following DNS records exists:
 
@@ -24,7 +25,7 @@ email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 
 ensuring that `mydomain.example` has delegated the issuer `https://issuer.example.com` to be authoratative for issuing verified email SD-JWTs 
 
-3. The browser fetches the well-known file for `https://issuer.example.com` from `https://issuer.example.com/.well-known/web-identity` per https://w3c-fedid.github.io/FedCM/#idp-api-well-known
+4. The browser fetches the well-known file for `https://issuer.example.com` from `https://issuer.example.com/.well-known/web-identity` per https://w3c-fedid.github.io/FedCM/#idp-api-well-known
 
 which returns `application/json` containing the IdentityProviderWellKnown JSON object https://w3c-fedid.github.io/FedCM/#idp-api-config-file
 
@@ -38,7 +39,7 @@ which returns `application/json` containing the IdentityProviderWellKnown JSON o
 
 > Q: what are the restrictions on the hostname in the provider_urls? How does the browser know which one of the `provider_urls` to use if more than one in the array?
 
-4. The browser fetches the config file listed in `provider_urls` which MUST contain:
+5. The browser fetches the config file listed in `provider_urls` which MUST contain:
 
 - **accounts_endpoint** - what the browser calls to get the accounts from the provider
 - **sd_assertion_endpoint - the endpoint the browser calls passing 1P cookies to obtain an SD-JWT
@@ -91,6 +92,9 @@ try {
    // no providers or other error
 }
 ```
+
+> Exploring not requiring JS and enabling this functionality declaratively by the page having a hidden field that the browser will fill with the SD-JWT that gets posted to the RP server.
+
 
 2. User clicks in input field and browser displays selection of what could be shared. Emails that would be verified are decorated for user to understand. User selects a verified email from browser selection.
 
