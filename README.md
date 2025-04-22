@@ -70,9 +70,19 @@ On page load, the browser:
 
 #### For each registered provider
 
-1. The browser fetches the .well-known file of the registered `configURL`, by calculating origin(configURL) + ".well-known/webidentity". It MUST contain:
+1. The browser fetches the well-known file for `https://issuer.example.com` from `https://issuer.example.com/.well-known/web-identity` per https://w3c-fedid.github.io/FedCM/#idp-api-well-known
+
+which returns `application/json` containing the IdentityProviderWellKnown JSON object https://w3c-fedid.github.io/FedCM/#idp-api-config-file
+
+> Q: what are the restrictions on the hostname in the provider_urls?
+> How does the browser know which one of the `provider_urls` to use if more than one in the array?
+
+The well-known file MUST contain:
+
     - **accounts_endpoint** - what the browser calls to get the accounts from the provider
     - **jwks_uri** - a jwks file containing one or public keys
+
+For example:
 
 ```json 
 {
@@ -81,7 +91,7 @@ On page load, the browser:
 } 
 ```
 
-2. The browser fetches the `configURL` that was registered in the previous step, which MUST contain:
+2. The browser fetches the config file listed in `provider_urls` which MUST contain:
     - **sd_assertion_endpoint** - the endpoint the browser calls passing 1P cookies to obtain an SD-JWT
 
 > We could potentially move the `sd_assertion_endpoint` to the .well-known file, but that would force issuers to have just a single `sd_assertion_endpoint` per eTL+1. IdPs needed more than one `id_assertion_endpoint` per eTL+1, so I'd expect them to want too for the `sd_assertion_endpoint`, but if that's not true, it could move too to the .well-known file.
