@@ -102,7 +102,7 @@ For example:
 } 
 ```
 
-3. From the **accounts_endpoint** that was discovered in the previous step, the browser fetches the list of accounts from the provider:
+3. Browser fetches `accounts_endpoint` from provider
 
 ```json
 {
@@ -114,8 +114,8 @@ For example:
 }
 ```
 
-3. The browser parses the `email` claim and checks if the following DNS records exists:
-
+4. The browser checks if the following DNS records exists:
+   
 ```
 email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 ```
