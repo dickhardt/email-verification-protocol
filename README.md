@@ -115,7 +115,7 @@ For example:
 ```
 
 4. The browser checks if the following DNS records exists:
-   
+
 ```
 email._webidentity.mydomain.example   TXT   iss=https://issuer.example.com
 ```
