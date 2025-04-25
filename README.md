@@ -42,10 +42,16 @@ Verified Email Release: The user navigates to any website that requires a verifi
 
 Ahead of time, a website registers itself as a third party autofill provider by:
   
-- **1.1** - User navigates to the apex or any sub-domain of the Issuer such as `issuer.example` or `www.issuer.example`
+- **1.1** - User navigates to the apex or any sub-domain of the Issuer such as `issuer.example` or `www.issuer.example` and logs in. The page notifies the browser that the user is logged in with:
+
+```javascript
+navigator.login.setStatus("logged-in");
+```
+
+> The Issuer can also set the login status with a HTTP header `Set-Login: logged-in` on the way back from redirects.
+> The Issuer calls `navigator.login.setStatus("logged-out");` when the user logs out.
 
 - **1.2** - The page calls to register as an Issuer with:
-
 
 ```javascript
 // This prompts the user to accept "https://issuer.example" as Issuer of verified emails.
@@ -99,7 +105,7 @@ try {
 
 ## 3. Email Suggestion Aggregation
 
-On page load and detecting the RP has performed (2), for each registered Issuer:
+On page load and detecting the RP has performed (2), for each registered Issuer that the user is still [logged-in](https://w3c-fedid.github.io/login-status/#get-the-login-status) to:
 
 - **3.1** - The browser loads `https://issuer.example/.well-known/web-identity` and MUST follow redirects to the same path but with a different subdomain of the Issuer, for example `https://accounts.issuer.example/.well-known/web-identity`. 
 
@@ -109,6 +115,7 @@ On page load and detecting the RP has performed (2), for each registered Issuer:
 
 - *accounts_endpoint* - the API endpoint per FedCM that returns the accounts the issuer provides
 - *sd_issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
+- *login_url* - The URL that the browser can point the user to to login to the Issuer in case the user is logged out
 - *sd_jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
 
 Each of these properties MUST include the issuer domain as the root of their hostname. 
