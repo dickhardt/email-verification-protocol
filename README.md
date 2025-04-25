@@ -203,15 +203,16 @@ on successful login the Issuer calls `IdentityProvider.resolve(sd_jwt)`
 
 - **6.2** - JS code sends `token` to RP server. 
 
+- **6.3** - RP Server MUST validate the SD-JWT as described [here](https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-17.html#name-verification) (e.g. validating `nonce` and `aud` as described [here](https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-17.html#section-7.3-4.5.2.6)).
 
-- **6.3** - RP Server retrieves `iss` value from SD-JWT and disclosed email address and extracts email domain. 
+- **6.4** - RP Server retrieves `iss` value from SD-JWT and disclosed email address and extracts email domain. 
 
-- **6.4** - RP Server checks DNS record for email domain contains `iss` value just as browser did in 3.4. 
+- **6.5** - RP Server checks DNS record for email domain contains `iss` value just as browser did in 3.4. 
 
 ```
 email._webidentity.email-domain.example   TXT   iss=issuer.example
 ```
 
-- **6.5** - RP Server fetches `.well-known/web-identity` just as browser did in 3.1. and extracts `sd_jwks_uri` and verifies the host ends with the Issuer domain.
+- **6.6** - RP Server fetches `.well-known/web-identity` just as browser did in 3.1. and extracts `sd_jwks_uri` and verifies the host ends with the Issuer domain.
 
-- **6.6** - RP Server verifies SD-JWT+KB token using keys from the `sd_jwks_uri` per [sd-jwt rfc]
+- **6.7** - RP Server verifies SD-JWT+KB token using keys from the `sd_jwks_uri` per [sd-jwt rfc]
