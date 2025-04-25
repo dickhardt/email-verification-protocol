@@ -19,6 +19,8 @@ The protocol aligns with the issuer->holder->verifier pattern where the holder i
 
 - Issuer: a service that exposes an `accounts_endpoint` that returns the email addresses it can issue SD-JWTs for, a `issuance_endpoint` that is called to obtain an SD-JWT, and a `sd_jwt_uri` that contains the public keys used to verify the SD-JWT. The Issuer is identified by its domain, an eTLD+1 (eg `issuer.example`). THe hostname in all URLs from the Issuer's metadata MUST end with the Issuer's domain. This identifier is what binds the SD-JWT, the DNS delegation, with the Issuer.
 
+> Restricting the Issuer to be an eTLD+1 may be too restrictive. Let's get feedback. Having a crisp identifier and a format different than OpenID Connect tokens (no leading https://) simplifies verification and has clean bindings between all the services, DNS record, and token.
+
 
 ## User Experience
 
