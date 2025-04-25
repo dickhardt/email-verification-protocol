@@ -151,7 +151,7 @@ email._webidentity.issuer.example   TXT   iss=issuer.example
 
 - **3.5** - The browser stores the list of verified emails is will offer for Verified Email Autocomplete, and MAY cache this list for future pages.
 
-### 4. Email Selection
+## 4. Email Selection 
 
 - **4.1** - User focusses on input field with
 
