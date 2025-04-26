@@ -107,6 +107,8 @@ try {
 
 On page load and detecting the RP has performed (2), for each registered Issuer that the user is [logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status) the browser offers an autofill suggestion to login (via the **login_url** describe below) and for Issuers where the user is [logged-in]([logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status)) it does the following:
 
+> TODO: We have to introduce the ability for the browser to know the difference between (a) "logged-out" users and (b) users that are "logged-in" but actually don't have any accounts with verified emails to be provided.
+
 - **3.1** - The browser loads `https://issuer.example/.well-known/web-identity` and MUST follow redirects to the same path but with a different subdomain of the Issuer, for example `https://accounts.issuer.example/.well-known/web-identity`. 
 
 > Most apex domains redirect all HTTP calls to a subdomain
