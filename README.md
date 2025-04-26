@@ -105,7 +105,7 @@ try {
 
 ## 3. Email Suggestion Aggregation
 
-On page load and detecting the RP has performed (2), for each registered Issuer that the user is still [logged-in](https://w3c-fedid.github.io/login-status/#get-the-login-status) to:
+On page load and detecting the RP has performed (2), for each registered Issuer that the user is [logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status) the browser offers the user to login (via the **login_url** describe below) and for Issuer where the user is [logged-in]([logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status)) it does the following:
 
 - **3.1** - The browser loads `https://issuer.example/.well-known/web-identity` and MUST follow redirects to the same path but with a different subdomain of the Issuer, for example `https://accounts.issuer.example/.well-known/web-identity`. 
 
