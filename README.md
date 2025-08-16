@@ -45,7 +45,12 @@ Ahead of time, a website registers itself as a third party autofill provider by:
 - **1.1** - User navigates to the apex or any sub-domain of the Issuer such as `issuer.example` or `www.issuer.example` and logs in. The page notifies the browser that the user is logged in with:
 
 ```javascript
-navigator.login.setStatus("logged-in");
+navigator.login.setStatus("logged-in", {
+  accounts: [{
+    "id": "xyz",
+    "email": "john.doe@email-domain.example",
+  }]
+});
 ```
 
 > The Issuer can also set the login status with a HTTP header `Set-Login: logged-in` on the way back from redirects.
@@ -115,7 +120,6 @@ On page load and detecting the RP has performed (2), for each registered Issuer 
 
 - **3.2** - The browser checks that the `.well-known/web-identity` file contains JSON that includes the following properties:
 
-- *accounts_endpoint* - the API endpoint per FedCM that returns the accounts the issuer provides
 - *sd_issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *login_url* - The URL that the browser can point the user to to login to the Issuer in case the user is logged out
 - *sd_jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
@@ -126,26 +130,12 @@ Following is an example `.well-known/web-identity` file
 
 ```json
 {
-  "accounts_endpoint": "https://accounts.issuer.example/fedcm/accounts",
   "sd_issuance_endpoint": "https://accounts.issuer.example/fedcm/issuance",
   "sd_jwks_uri": "https://accounts.issuer.example/fedcm/jwks.json"
 }
 ```
 
-- **3.3** - The browser fetches the `accounts_endpoint` from Issuer passing cookies. The `application/json` response MAY include an `accounts` property that is an array of objects that MUST contain `id` and `email`.
-
-Eg:
-
-```json
-{
-  "accounts": [{
-    "id": "xyz",
-    "email": "john.doe@email-domain.example",
-  }]
-}
-```
-
-- **3.4** - For each email domain, the browser confirms there is a DNS record for `email._webidentity.` with a TXT record containing the `iss=` set to the Issuer domain. Following is an example DNS record:
+- **3.3** - For each email domain, the browser confirms there is a DNS record for `email._webidentity.` with a TXT record containing the `iss=` set to the Issuer domain. Following is an example DNS record:
 
 ```
 email._webidentity.email-domain.example   TXT   iss=issuer.example
