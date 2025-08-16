@@ -48,22 +48,18 @@ Ahead of time, a website registers itself as a third party autofill provider by:
 navigator.login.setStatus("logged-in");
 ```
 
-> The Issuer can also set the login status with a HTTP header `Set-Login: logged-in` on the way back from redirects.
-> The Issuer calls `navigator.login.setStatus("logged-out");` when the user logs out.
+Or alternatively through [HTTP headers](https://w3c-fedid.github.io/login-status/#login-status-http):
 
-- **1.2** - The page calls to register as an Issuer with:
-
-```javascript
-// This prompts the user to accept "https://issuer.example" as Issuer of verified emails.
-const response = await IdentityProvider.register();
-// Q: perhaps this should be IdentityProvider.registerEmailIssuer()  ???
+```http
+HTTP/1.1 200 OK
+Set-Login:  logged-in
 ```
 
-> TODO: Explore doing this declaratively with HTTP headers and/or HTML metadata.
+> The Issuer calls `navigator.login.setStatus("logged-out");` when the user logs out.
 
-- **1.3** - The browser then confirms the Issuer will correctly issue SD-JWTs by performing steps (3), (5) and (6) below.
+- **1.2** - The browser then confirms the Issuer will correctly issue SD-JWTs by performing steps (3), (5) and (6) below.
 
-- **1.4** - If the Issuer has provided valid SD-JWTs for at least one email address, the browser prompts the user to accept the issuer by displaying the email addresses verified, and if the user accepts the prompt, the browser records `issuer.example.net` as an Issuer in its local storage.
+- **1.3** - If the Issuer has provided valid SD-JWTs for at least one email address, the browser prompts the user to accept the issuer by displaying the email addresses verified, and if the user accepts the prompt, the browser records `issuer.example.net` as an Issuer in its local storage.
 
 
 
