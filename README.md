@@ -105,7 +105,7 @@ try {
 
 ## 3. Email Suggestion Aggregation
 
-On page load and detecting the RP has performed (2), for each registered Issuer that the user is [logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status) the browser offers an autofill suggestion to login (via the **login_url** describe below) and for Issuers where the user is [logged-in]([logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status)) it does the following:
+On page load and detecting the RP has performed (2), for each registered Issuer that the user is [logged-in]([logged-out](https://w3c-fedid.github.io/login-status/#get-the-login-status)) it does the following:
 
 > TODO: We have to introduce the ability for the browser to know the difference between (a) "logged-out" users and (b) users that are "logged-in" but actually don't have any accounts with verified emails to be provided.
 
@@ -181,7 +181,7 @@ email._webidentity.issuer.example   TXT   iss=issuer.example
 account_id=xyz&format=SD-JWT&... key binding info
 ```
 
-- **5.2** - Issuer checks if there is a logged in user, and the logged in user has the account identified by `account_id`. If all good the Issuer creates a fresh SD-JWT and returns it as the value of `token` in an `application/json` response.
+- **5.2** - Issuer checks if there is a logged in user, and the logged in user has the account identified by `account_id`. If all good the Issuer creates a fresh SD-JWT and returns it as the value of `token` in an `application/json` response. If not, a response with an `error` can be passed to the browser.
 
 
 ```json
