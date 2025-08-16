@@ -37,7 +37,7 @@ Verified Email Release: The user navigates to any website that requires a verifi
 3. **Token Request**
 4. **Token Issuance**
 5. **Token Presentation**
-
+6. **Token Verification**
 
 ## 1. Email Request
 
