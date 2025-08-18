@@ -100,7 +100,7 @@ email._web-identity.email-domain.example   TXT   iss=issuer.example
 
 This record confirms that `email-domain.example` has delegated Verified Email Autocomplete to the issuer `issuer.example`.
 
-Note this record MUST also exist for `issuer.example` to support Verified Email Autocomplete.
+If the email domain and the issuer are the same domain, then the record would be:
 
 ```
 email._web-identity.issuer.example   TXT   iss=issuer.example
@@ -131,7 +131,7 @@ Following is an example `.well-known/web-identity` file
 
 - **3.4** - the browser generates a private / public key and signs a JWT with the private key that has the public key in the JWT header in the JWK format as a `jwk` claim, and contains the following claims in the payload:
 
-  - *iss* - the user agent string
+  - *iss* - a string for the browser, can be any value
   - *aud* - the issuer
   - *iat* - time when the JWT was signed
   - *nonce* - nonce provided by the RP
@@ -154,7 +154,7 @@ An example JWT header:
 An example payload 
 ```json
 {
-  "iss": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+  "iss": "user-agent",
   "aud": "issuer.example",
   "iat": 1692345600,
   "nonce": "259c5eae-486d-4b0f-b666-2a5b5ce1c925",
