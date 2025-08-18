@@ -47,7 +47,7 @@ User navigates to a site that will act as the RP.
 
 ```html
 
-<input autocomplete="email webidentity">
+<input autocomplete="email web-identity">
 
 ```
 
@@ -77,7 +77,7 @@ try {
 
 ## 2. Email Selection 
 
-- **2.1** - User focusses on input field with `autocomplete="email webidentity"`
+- **2.1** - User focusses on input field with `autocomplete="email web-identity"`
 
 - **2.2** - The browser displays the list of email addresses it has for the user. 
 
@@ -90,12 +90,12 @@ try {
 
 If the RP has performed (1):
 
-- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `email._webidentity.$EMAIL_DOMAIN`, and looks for a string of the form `iss=$ISSUER` where $ISSUER is the issuer identifier. 
+- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN`, and looks for a string of the form `iss=$ISSUER` where $ISSUER is the issuer identifier. 
 
 example record
 
 ```
-email._webidentity.email-domain.example   TXT   iss=issuer.example
+email._web-identity.email-domain.example   TXT   iss=issuer.example
 ```
 
 This record confirms that `email-domain.example` has delegated Verified Email Autocomplete to the issuer `issuer.example`.
@@ -103,17 +103,17 @@ This record confirms that `email-domain.example` has delegated Verified Email Au
 Note this record MUST also exist for `issuer.example` to support Verified Email Autocomplete.
 
 ```
-email._webidentity.issuer.example   TXT   iss=issuer.example
+email._web-identity.issuer.example   TXT   iss=issuer.example
 ```
 
 > Access to DNS records and email is often independent of website deployments. This provides assurance that an issuer is truly authorized as an insider with only access to websites on `issuer.example` could setup an issuer that would grant them verified emails for any email at `issuer.example`.
 
-- **3.2** - if an issuer is found, the browser loads `https://$ISSUER$/.well-known/webidentity` and MUST follow redirects to the same path but with a different subdomain of the Issuer.
+- **3.2** - if an issuer is found, the browser loads `https://$ISSUER$/.well-known/web-identity` and MUST follow redirects to the same path but with a different subdomain of the Issuer.
 
-For example, `https://issuer.example/.well-known/webidentity` may redirect to `https://accounts.issuer.example/.well-known/webidentity`. 
+For example, `https://issuer.example/.well-known/web-identity` may redirect to `https://accounts.issuer.example/.well-known/web-identity`. 
 
 
-- **3.3** - the browser confirms that the `.well-known/webidentity` file contains JSON that includes the following properties:
+- **3.3** - the browser confirms that the `.well-known/web-identity` file contains JSON that includes the following properties:
 
 - *issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
@@ -124,12 +124,12 @@ Following is an example `.well-known/web-identity` file
 
 ```json
 {
-  "issuance_endpoint": "https://accounts.issuer.example/webidentity/issuance",
-  "jwks_uri": "https://accounts.issuer.example/webidentity/jwks.json"
+  "issuance_endpoint": "https://accounts.issuer.example/web-identity/issuance",
+  "jwks_uri": "https://accounts.issuer.example/web-identity/jwks.json"
 }
 ```
 
-- **3.4** - the browser generates a private / public key and signs a JWT with the private key that has the public key in the JWT header and contains the following claims in the payload:
+- **3.4** - the browser generates a private / public key and signs a JWT with the private key that has the public key in the JWT header in the JWK format as a `jwk` claim, and contains the following claims in the payload:
 
   - *iss* - the user agent string
   - *aud* - the issuer
@@ -137,15 +137,43 @@ Following is an example `.well-known/web-identity` file
   - *nonce* - nonce provided by the RP
   - *email* - email address to be verified 
 
+An example JWT header:
+```json
+{
+  "alg": "EdDSA",
+  "typ": "JWT",
+  "jwk": {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "11qYAYdk9E6z7mT6rk6j1QnXb6pYq4v9wXb6pYq4v9w"  // base64url-encoded public key
+  }
+}
+```
+> do we want to register a new JWT `typ`
+
+An example payload 
+```json
+{
+  "iss": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+  "aud": "issuer.example",
+  "iat": 1692345600,
+  "nonce": "259c5eae-486d-4b0f-b666-2a5b5ce1c925",
+  "email": "user@example.com"
+}
+```
+
+
 - **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/json` containing a JSON string with a `request_token` property set to the signed JWT as a JSON string. 
 
-```
+```bash
 \\ cookies
-Content-type: application/json
+Content-type: application/x-www
 
-{"request_token":"ey...token_request_jwt"}
+request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC... truncated for brevity
+
 ```
-
+> Q: What is our mechanism for crypto agility and algorithm support discovery? 
+> The web-identity file can have an array of supported algorithms
 
 ## 4. Token Issuance
 
@@ -153,11 +181,11 @@ On receipt of a token request:
 
 - **4.1** - the issuer verifies the request_token by:
 
-  - TBD
+  - TBD - standard JWT verification
 
 - **4.2** - the issuer checks if the cookies sent represent a logged in user, and if the logged in user has control of the email provided in the request_token. If so the issuer generates an SD-JWT with the following properties:
 
-  - TBD
+  - TBD - follows SD-JWT standard
 
 
 - **4.3** - the issuer returns the SD-JWT to the browser as the value of `issued_token` in an `application/json` response.
@@ -178,11 +206,11 @@ On receiving the `issued_token`:
 
 - ** 5.1 ** - the browser verifies the token by:
 
-- TBD
+- TBD - standard SD-JWT verification
 
 - ** 5.2 ** - the browser then creates an SD-JWT+KB by:
 
-- TBD
+- TBD - standard SD-JWT key binding
 
 - ** 5.3 ** - the browser returns the `navigator.credentials.get()` call returns and `credential.token` is an SD-JWT+KB
 
@@ -197,6 +225,8 @@ On receiving the `issued_token`:
 
 The RP now has a SD-JWT+KB and verifies by:
 
+> standard SD-JWT+KB verification 
+
 - **6.1** - the JS code in the page sends `issued.token` to the RP
 
 - **6.2** - the RP extracts the KB from the SD-JWT+KB, and the header and payload from the SD-JWT
@@ -205,8 +235,8 @@ The RP now has a SD-JWT+KB and verifies by:
 
 - **6.4** - the RP verifies the KB is bound to the SD-JWT per XXX
 
-- **6.5** - the RP retrieves the TXT record for `email._webidentity` for the email domain, and the the value of the issuer in the record matches the `iss` in the SD-JWT just as the browser did in XX
+- **6.5** - the RP retrieves the TXT record for `email._web-identity` for the email domain, and the the value of the issuer in the record matches the `iss` in the SD-JWT just as the browser did in XX
 
-- **6.6** - the RP retrieves the `.well-known/webidentity` file for the issuer just as the browser did in XX
+- **6.6** - the RP retrieves the `.well-known/web-identity` file for the issuer just as the browser did in XX
 
 - **6.7** - the RP verifies SD-JWT using keys from the `jwks_uri` just as the browser did in XX
