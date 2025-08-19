@@ -179,67 +179,150 @@ request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC... truncated for brevity
 
 On receipt of a token request:
 
-- **4.1** - the issuer verifies the request_token by:
+- **4.1** - the issuer MUST verify the request_token by:
 
-  - TBD - standard JWT verification
+  - parsing the JWT into header, payload, and signature components
+  - confirming the presence of, and extracting the `jwk` and `alg` fields from the JWT header, and the `aud`, `iat`, `email`, and `nonce` claims from the payload
+  - verifying the JWT signature using the `jwk` with the `alg` algorithm
+  - verifying the `aud` claim exactly matches the issuer's identifier
+  - verifying the `iat` claim is within 60 seconds of the current time
+  - verifying the `email` claim contains a syntactically valid email address
+
 
 - **4.2** - the issuer checks if the cookies sent represent a logged in user, and if the logged in user has control of the email provided in the request_token. If so the issuer generates an SD-JWT with the following properties:
 
-  - TBD - follows SD-JWT standard
+  - **Header**: MUST contain 
+    - `alg`: signing algorithm
+    - `kid`: key identifier of key used to sign
+    - `typ` set to "web-identity+sd-jwt"
+  - **Payload**: MUST contain the following claims:
+    - `iss`: the issuer identifier
+    - `iat`: issued at time 
+    - `cnf`: confirmation claim containing the public key from the request_token's `jwk` field
+`   - `email`: claim containing the email address from the request_token
+    - `email_verified`: claim that email is verified per OpenID Connect 1.0
+  - **Signature**: MUST be signed with the issuer's private key corresponding to a public key in the `jwks_uri` identified by `kid`
+
+
+  Example header:
+  ```json
+  {
+    "alg": "EdDSA",
+    "kid": "2024-08-19",
+    "typ": "web-identity+sd-jwt"
+  }
+  ```
+
+  Example payload:
+  ```json
+  {
+    "iss": "issuer.example",
+    "iat": 1724083200,
+    "cnf": {
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "11qYAYdk9E6z7mT6rk6j1QnXb6pYq4v9wXb6pYq4v9w"
+      }
+    },
+    "email": "user@example.com",
+    "email_verified": true
+  }
+  ```
 
 
 - **4.3** - the issuer returns the SD-JWT to the browser as the value of `issued_token` in an `application/json` response.
 
 Example:
-```
+```bash
 Content-type: application/json
 
 {"issued_token":"eyssss...."}
 ```
 
-> In future the issuer versions the issuer cloud prompt the user to login via a URL or with a Passkey request.
+> In future the issuer versions the issuer could prompt the user to login via a URL or with a Passkey request.
 
 
 ## 5. Token Presentation
 
 On receiving the `issued_token`:
 
-- ** 5.1 ** - the browser verifies the token by:
+- ** 5.1 ** - the browser MUST verify the SD-JWT per (SD-JWT spec) by:
 
-- TBD - standard SD-JWT verification
+  - parsing the SD-JWT into header, payload, and signature components
+  - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/web-identity` file
+  - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
+  - verifying the `iat` claim is within 60 seconds of the current time
+  - verifying the `email` claim matches the email address the user selected
+  - verifying the `email_verified` claim is true
 
 - ** 5.2 ** - the browser then creates an SD-JWT+KB by:
 
-- TBD - standard SD-JWT key binding
+  - taking the verified SD-JWT from step 5.1 as the base token
+  - creating a Key Binding JWT (KB-JWT) with the following structure:
+    - **Header**: 
+      - `alg`: same signing algorithm used by the browser's private key
+      - `typ`: "kb+jwt"
+    - **Payload**:
+      - `aud`: the RP's origin
+      - `nonce`: the nonce from the original `navigator.credentials.get()` call
+      - `iat`: current time when creating the KB-JWT
+      - `sd_hash`: SHA-256 hash of the SD-JWT
+  - signing the KB-JWT with the browser's private key (the same key pair generated in step 3.4)
+  - concatenating the SD-JWT and the KB-JWT separated by a tilde (~) to form the SD-JWT+KB
 
-- ** 5.3 ** - the browser returns the `navigator.credentials.get()` call returns and `credential.token` is an SD-JWT+KB
+  Example KB-JWT header:
+  ```json
+  {
+    "alg": "EdDSA",
+    "typ": "kb+jwt"
+  }
+  ```
 
+  Example KB-JWT payload:
+  ```json
+  {
+    "aud": "https://rp.example",
+    "nonce": "259c5eae-486d-4b0f-b666-2a5b5ce1c925",
+    "iat": 1724083260,
+    "sd_hash": "X9yH0Ajrdm1Oij4tWso9UzzKJvPoDxwmuEcO3XAdRC0"
+  }
+  ```
 
-``` 
-// token example and payload
-```
+- ** 5.3 ** - the browser returns the `navigator.credentials.get()` call and `credential.token` is the SD-JWT+KB
+
 
 > Explore browser setting a hidden field instead so JS is not required
 
 ## 6. Token Verification
 
-The RP now has a SD-JWT+KB and verifies by:
+The RP web page now has a SD-JWT+KB and sends it with JS code to the RP server. The RP server MUST verify the SD-JWT+KB by:
 
-> standard SD-JWT+KB verification 
+- **6.1** - the RP server receives the SD-JWT+KB from the web page
 
-- **6.1** - the JS code in the page sends `issued.token` to the RP
+- **6.2** - the RP parses the SD-JWT+KB by separating the SD-JWT and KB-JWT components (separated by tilde ~)
 
-- **6.2** - the RP extracts the KB from the SD-JWT+KB, and the header and payload from the SD-JWT
+- **6.3** - the RP verifies the KB-JWT by:
+  - parsing the KB-JWT into header, payload, and signature components
+  - confirming the presence of, and extracting the `alg` field from the KB-JWT header, and the `aud`, `nonce`, `iat`, and `sd_hash` claims from the payload
+  - verifying the `aud` claim matches the RP's origin
+  - verifying the `nonce` claim matches the nonce from the RP's session with the web page
+  - verifying the `iat` claim is within a reasonable time window 
+  - computing the SHA-256 hash of the SD-JWT and verifying it matches the `sd_hash` claim
 
-- **6.3** - the RP verifies the `nonce` in the SD-JWT is from the session with the web page
+- **6.4** - the RP verifies the SD-JWT by:
+  - parsing the SD-JWT into header, payload, and signature components
+  - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/web-identity` file
+  - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
+  - verifying the `iss` claim exactly matches the issuer identifier from the DNS record
+  - verifying the `iat` claim is within a reasonable time window
+  - verifying the `email_verified` claim is true
 
-- **6.4** - the RP verifies the KB is bound to the SD-JWT per XXX
-
-- **6.5** - the RP retrieves the TXT record for `email._web-identity` for the email domain, and the the value of the issuer in the record matches the `iss` in the SD-JWT just as the browser did in XX
-
-- **6.6** - the RP retrieves the `.well-known/web-identity` file for the issuer just as the browser did in XX
-
-- **6.7** - the RP verifies SD-JWT using keys from the `jwks_uri` just as the browser did in XX
+- **6.5** - the RP verifies the KB-JWT signature using the public key from the `cnf` claim in the SD-JWT with the `alg` algorithm from the KB-JWT header
 
 
 # Privacy Considerations
