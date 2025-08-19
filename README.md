@@ -32,12 +32,12 @@ Verified Email Release: The user navigates to any website that requires a verifi
 
 # Processing Steps
 
-1. **Email Request**
-2. **Email Selection**
-3. **Token Request**
-4. **Token Issuance**
-5. **Token Presentation**
-6. **Token Verification**
+1. [**Email Request**](#1-email-request)
+2. [**Email Selection**](#2-email-selection)
+3. [**Token Request**](#3-token-request)
+4. [**Token Issuance**](#4-token-issuance)
+5. [**Token Presentation**](#5-token-presentation)
+6. [**Token Verification**](#6-token-verification)
 
 ## 1. Email Request
 
@@ -240,7 +240,77 @@ Content-type: application/json
 {"issued_token":"eyssss...."}
 ```
 
-> In future the issuer versions the issuer could prompt the user to login via a URL or with a Passkey request.
+## 4.4 Error Responses
+
+If the issuer cannot process the token request successfully, it MUST return an appropriate HTTP status code with a JSON error response containing an `error` field and optionally an `error_description` field.
+
+### 4.4.1 Authentication Required
+
+When the request lacks valid authentication cookies, contains expired/invalid cookies, or the authenticated user does not have control of the requested email address:
+
+**HTTP 401 Unauthorized**
+```json
+{
+  "error": "authentication_required",
+  "error_description": "User must be authenticated and have control of the requested email address"
+}
+```
+
+### 4.4.2 Invalid Parameters
+
+When the `request_token` is malformed, missing required claims, or contains invalid values:
+
+**HTTP 400 Bad Request**
+```json
+{
+  "error": "invalid_request", 
+  "error_description": "Invalid or malformed request_token"
+}
+```
+
+Specific cases include:
+- Missing or invalid `email` claim
+- Missing or invalid `nonce` claim  
+- Missing or invalid `aud` claim that doesn't match the issuer identifier
+- Missing or invalid `iat` claim (outside 60 second window)
+- Missing or invalid `jwk` in header
+
+### 4.4.3 Invalid Token
+
+When the `request_token` signature verification fails or the token structure is invalid:
+
+**HTTP 400 Bad Request**
+```json
+{
+  "error": "invalid_token",
+  "error_description": "Token signature verification failed or token structure is invalid"
+}
+```
+
+### 4.4.4 Server Errors
+
+For internal server errors or temporary unavailability:
+
+**HTTP 500 Internal Server Error**
+```json
+{
+  "error": "server_error",
+  "error_description": "Temporary server error, please try again later"
+}
+```
+
+### Error Response Requirements
+
+All error responses MUST:
+- Use appropriate HTTP status codes (400, 401, 500, etc.)
+- Include `Content-Type: application/json` header
+- Include proper CORS headers to allow browser access
+- Contain an `error` field with a machine-readable error code
+- Optionally contain an `error_description` field with human-readable details
+
+The browser SHOULD handle these errors gracefully by either prompting the user to authenticate with the issuer (when that is specified)  or falling back to traditional email verification methods.
+
+> In a future version of this spec, the issuer could prompt the user to login via a URL or with a Passkey request.
 
 
 ## 5. Token Presentation
