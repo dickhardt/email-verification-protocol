@@ -90,7 +90,7 @@ try {
 
 If the RP has performed (1):
 
-- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN`, and looks for a string of the form `iss=$ISSUER` where $ISSUER is the issuer identifier. 
+- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN`. The contents of the record is MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `email._web-identity.$EMAIL_DOMAIN`.
 
 example record
 
