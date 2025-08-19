@@ -240,3 +240,14 @@ The RP now has a SD-JWT+KB and verifies by:
 - **6.6** - the RP retrieves the `.well-known/web-identity` file for the issuer just as the browser did in XX
 
 - **6.7** - the RP verifies SD-JWT using keys from the `jwks_uri` just as the browser did in XX
+
+
+# Privacy Considerations
+
+> Below are notes capturing some discussions of potential privacy implications.
+
+1. The email domain operator no longer learns which applications the user is verifying their email address to as the applications are no longer sending an email verification code to the user. By using an SD-JWT+KB, the browser intermediates the request and response so that the issuer does not learn the identity of the RP. 
+
+2. The RP can infer if a user is logged into the issuer as the RP receives a SD-JWT when the user is logged in, and does not when the user is not logged in. 
+
+3. The issuer may learn the user has email at a mail domain it is authoritative for that it did not know the user had. 
