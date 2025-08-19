@@ -117,6 +117,7 @@ For example, `https://issuer.example/.well-known/web-identity` may redirect to `
 
 - *issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
+- *signing_alg_values_supported* - OPTIONAL. JSON array containing a list of the JWS signing algorithms ("alg" values) supported by both the browser for request tokens and the issuer for issued tokens. The same algorithm MUST be used for both the `request_token` and `issued_token` within a single issuance flow. Algorithm identifiers MUST be from the IANA "JSON Web Signature and Encryption Algorithms" registry. If omitted, "EdDSA" is the default. "EdDSA" SHOULD be included in the supported algorithms list. The value "none" MUST NOT be used.
 
 Each of these properties MUST include the issuer domain as the root of their hostname. 
 
@@ -125,7 +126,8 @@ Following is an example `.well-known/web-identity` file
 ```json
 {
   "issuance_endpoint": "https://accounts.issuer.example/web-identity/issuance",
-  "jwks_uri": "https://accounts.issuer.example/web-identity/jwks.json"
+  "jwks_uri": "https://accounts.issuer.example/web-identity/jwks.json",
+  "signing_alg_values_supported": ["EdDSA", "RS256"]
 }
 ```
 
@@ -135,6 +137,8 @@ Following is an example `.well-known/web-identity` file
   - *iat* - time when the JWT was signed
   - *nonce* - nonce provided by the RP
   - *email* - email address to be verified 
+
+The browser SHOULD select an algorithm from the issuer's `signing_alg_values_supported` array, or use "EdDSA" if the property is not present.
 
 An example JWT header:
 ```json
@@ -161,17 +165,16 @@ An example payload
 ```
 
 
-- **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/json` containing a JSON string with a `request_token` property set to the signed JWT as a JSON string. 
+- **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/x-www-form-urlencoded` containing a `request_token` parameter set to the signed JWT. 
 
 ```bash
-\\ cookies
-Content-type: application/x-www
+POST /web-identity/issuance HTTP/1.1
+Host: accounts.issuer.example
+Cookie: session=...
+Content-Type: application/x-www-form-urlencoded
 
-request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC... truncated for brevity
-
+request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC...
 ```
-> Q: What is our mechanism for crypto agility and algorithm support discovery? 
-> The web-identity file can have an array of supported algorithms
 
 ## 4. Token Issuance
 
@@ -190,14 +193,14 @@ On receipt of a token request:
 - **4.2** - the issuer checks if the cookies sent represent a logged in user, and if the logged in user has control of the email provided in the request_token. If so the issuer generates an SD-JWT with the following properties:
 
   - **Header**: MUST contain 
-    - `alg`: signing algorithm
+    - `alg`: signing algorithm (SHOULD match the algorithm from the request_token)
     - `kid`: key identifier of key used to sign
     - `typ` set to "web-identity+sd-jwt"
   - **Payload**: MUST contain the following claims:
     - `iss`: the issuer identifier
     - `iat`: issued at time 
     - `cnf`: confirmation claim containing the public key from the request_token's `jwk` field
-`   - `email`: claim containing the email address from the request_token
+    - `email`: claim containing the email address from the request_token
     - `email_verified`: claim that email is verified per OpenID Connect 1.0
   - **Signature**: MUST be signed with the issuer's private key corresponding to a public key in the `jwks_uri` identified by `kid`
 
@@ -233,9 +236,10 @@ On receipt of a token request:
 
 Example:
 ```bash
-Content-type: application/json
+HTTP/1.1 200 OK
+Content-Type: application/json
 
-{"issued_token":"eyssss...."}
+{"issued_token":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
 ```
 
 ## 4.4 Error Responses
@@ -315,7 +319,7 @@ The browser SHOULD handle these errors gracefully by either prompting the user t
 
 On receiving the `issued_token`:
 
-- ** 5.1 ** - the browser MUST verify the SD-JWT per (SD-JWT spec) by:
+- **5.1** - the browser MUST verify the SD-JWT per (SD-JWT spec) by:
 
   - parsing the SD-JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
@@ -326,7 +330,7 @@ On receiving the `issued_token`:
   - verifying the `email` claim matches the email address the user selected
   - verifying the `email_verified` claim is true
 
-- ** 5.2 ** - the browser then creates an SD-JWT+KB by:
+- **5.2** - the browser then creates an SD-JWT+KB by:
 
   - taking the verified SD-JWT from step 5.1 as the base token
   - creating a Key Binding JWT (KB-JWT) with the following structure:
@@ -359,7 +363,7 @@ On receiving the `issued_token`:
   }
   ```
 
-- ** 5.3 ** - the browser returns the `navigator.credentials.get()` call and `credential.token` is the SD-JWT+KB
+- **5.3** - the browser returns the `navigator.credentials.get()` call and `credential.token` is the SD-JWT+KB
 
 
 > Explore browser setting a hidden field instead so JS is not required
@@ -401,4 +405,4 @@ The RP web page now has a SD-JWT+KB and sends it with JS code to the RP server. 
 
 2. The RP can infer if a user is logged into the issuer as the RP receives a SD-JWT when the user is logged in, and does not when the user is not logged in. 
 
-3. The issuer may learn the user has email at a mail domain it is authoritative for that it did not know the user had. 
+3. The issuer may learn the user has email at a mail domain it is authoritative for that it did not know the user had.
