@@ -131,7 +131,6 @@ Following is an example `.well-known/web-identity` file
 
 - **3.4** - the browser generates a private / public key and signs a JWT with the private key that has the public key in the JWT header in the JWK format as a `jwk` claim, and contains the following claims in the payload:
 
-  - *iss* - a string for the browser, can be any value
   - *aud* - the issuer
   - *iat* - time when the JWT was signed
   - *nonce* - nonce provided by the RP
@@ -154,7 +153,6 @@ An example JWT header:
 An example payload 
 ```json
 {
-  "iss": "user-agent",
   "aud": "issuer.example",
   "iat": 1692345600,
   "nonce": "259c5eae-486d-4b0f-b666-2a5b5ce1c925",
