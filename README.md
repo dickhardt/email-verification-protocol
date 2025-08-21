@@ -83,7 +83,9 @@ try {
 
 > Q: Are emails that could be verified decorated for user to understand? 
 
-- **2.3** - User selects an email address from browser selection.
+- **2.3** - User selects an email address from browser selection, or the user types an email into the field.
+
+> If we allow user to type in a field we allow learning about new emails, or if the user does not want the browser to remember emails, the verified email autocomplete is still available. In the future when we allow the user to use a passkey to authenticate to the issuer, the user can provide a verified email at a public computer by authenticating with their passkey and not enter any secrets into the public computer.
 
 
 ## 3. Token Request
