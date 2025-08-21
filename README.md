@@ -117,7 +117,7 @@ For example, `https://issuer.example/.well-known/web-identity` may redirect to `
 
 - *issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
-- *signing_alg_values_supported* - OPTIONAL. JSON array containing a list of the JWS signing algorithms ("alg" values) supported by both the browser for request tokens and the issuer for issued tokens. The same algorithm MUST be used for both the `request_token` and `issued_token` within a single issuance flow. Algorithm identifiers MUST be from the IANA "JSON Web Signature and Encryption Algorithms" registry. If omitted, "EdDSA" is the default. "EdDSA" SHOULD be included in the supported algorithms list. The value "none" MUST NOT be used.
+- *signing_alg_values_supported* - OPTIONAL. JSON array containing a list of the JWS signing algorithms ("alg" values) supported by both the browser for request tokens and the issuer for issued tokens. The same algorithm MUST be used for both the `request_token` and ance` within a single issuance flow. Algorithm identifiers MUST be from the IANA "JSON Web Signature and Encryption Algorithms" registry. If omitted, "EdDSA" is the default. "EdDSA" SHOULD be included in the supported algorithms list. The value "none" MUST NOT be used.
 
 Each of these properties MUST include the issuer domain as the root of their hostname. 
 
@@ -232,14 +232,14 @@ On receipt of a token request:
   ```
 
 
-- **4.3** - the issuer returns the SD-JWT to the browser as the value of `issued_token` in an `application/json` response.
+- **4.3** - the issuer returns the SD-JWT to the browser as the value of `issuance_token` in an `application/json` response.
 
 Example:
 ```bash
 HTTP/1.1 200 OK
 Content-Type: application/json
 
-{"issued_token":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
+{ance":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
 ```
 
 ## 4.4 Error Responses
@@ -317,7 +317,7 @@ The browser SHOULD handle these errors gracefully by either prompting the user t
 
 ## 5. Token Presentation
 
-On receiving the `issued_token`:
+On receiving the ance`:
 
 - **5.1** - the browser MUST verify the SD-JWT per (SD-JWT spec) by:
 
