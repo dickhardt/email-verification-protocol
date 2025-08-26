@@ -1,4 +1,4 @@
-# Verified Email Autocomplete
+# Email Verification Protocol
 
 Verifying control of an email address is a frequent activity on the web today and is used both to prove the user has provided a valid email address, and as a means of authenticating the user when returning to an application. 
 
@@ -7,7 +7,7 @@ Verification is performed by either:
 1) sending the user a link they click on or a verification code. This requires the user to switch from the application they are using to their email address and having to wait for the email arrive, and then perform the verification action. This friction often causes drop off in users completing the task.
 2) the user logs in with a social login provider such as Apple or Google that provide a verified email address. This requires the application to have set up a relationship with each social provider, and the user to be using one of those services and wanting to share the additional profile information that is also provided in the OpenID Connect flow.
 
-Verified Email Autocomplete enables an application to obtain a verified email address from any Issuer the user wishes to use without any prior registration by the application, and to only share the verified email address improving the privacy aspects of the interaction.
+The Email Verification Protocol enables an application to obtain a verified email address from any Issuer the user wishes to use without any prior registration by the application, and to only share the verified email address improving the privacy aspects of the interaction.
 
 The protocol aligns with the issuer->holder->verifier pattern where the holder is the browser and the verifier is the website requesting a verified email address. The issuer can be any service with a DNS record that the email domain delegates as being authoritative for the email domain.
 
@@ -85,7 +85,7 @@ try {
 
 - **2.3** - User selects an email address from browser selection, or the user types an email into the field.
 
-> If we allow user to type in a field we allow learning about new emails, or if the user does not want the browser to remember emails, the verified email autocomplete is still available. In the future when we allow the user to use a passkey to authenticate to the issuer, the user can provide a verified email at a public computer by authenticating with their passkey and not enter any secrets into the public computer.
+> If we allow user to type in a field we allow learning about new emails, or if the user does not want the browser to remember emails, the Email Verification Protocol is still available. In the future when we allow the user to use a passkey to authenticate to the issuer, the user can provide a verified email at a public computer by authenticating with their passkey and not enter any secrets into the public computer.
 
 
 ## 3. Token Request
@@ -100,7 +100,7 @@ example record
 email._web-identity.email-domain.example   TXT   iss=issuer.example
 ```
 
-This record confirms that `email-domain.example` has delegated Verified Email Autocomplete to the issuer `issuer.example`.
+This record confirms that `email-domain.example` has delegated email verification to the issuer `issuer.example`.
 
 If the email domain and the issuer are the same domain, then the record would be:
 
