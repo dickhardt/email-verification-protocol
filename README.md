@@ -41,38 +41,19 @@ Verified Email Release: The user navigates to any website that requires a verifi
 
 ## 1. Email Request
 
-User navigates to a site that will act as the RP.
+User navigates to a site that will act as the RP. 
 
-- **1.1** - The RP page has the following HTML in the page:
+- **1.1** - the RP Server generates a nonce and binds the nonce to the session.
+
+- **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to "email" and the `nonce` property set the the nonce. Following is an example of the HTML in the page:
 
 ```html
 
-<input autocomplete="email web-identity">
+<input autocomplete="email" nonce="h6s72ks8hct374sjusye8rH5Fws">
 
 ```
 
-- **1.2** - The page has made this call which has not returned:
-
-```js
-try {
-  const {token} = await navigator.credentials.get({
-    mediation: "conditional",
-    identity: {
-      providers: [{
-        format: "sd-jwt",
-        fields: ["email"],
-        nonce: "259c5eae-486d-4b0f-b666-2a5b5ce1c925",
-      }]
-    }
-  });
-  // send to token to server
-} catch ( e ) {
-   // no providers or other error
-}
-```
-
-
-> Explore not requiring JS and enabling this functionality declaratively by the page having a hidden field that the browser will fill with the SD-JWT that gets posted to the RP server.
+> The exact HTML markup is still in flux.
 
 
 ## 2. Email Selection 
@@ -92,12 +73,12 @@ try {
 
 If the RP has performed (1):
 
-- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN`. The contents of the record is MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `email._web-identity.$EMAIL_DOMAIN`.
+- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN`. The contents of the record is MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `_email-verification_.$EMAIL_DOMAIN`.
 
 example record
 
 ```
-email._web-identity.email-domain.example   TXT   iss=issuer.example
+_email-verification_.email-domain.example   TXT   iss=issuer.example
 ```
 
 This record confirms that `email-domain.example` has delegated email verification to the issuer `issuer.example`.
@@ -105,17 +86,17 @@ This record confirms that `email-domain.example` has delegated email verificatio
 If the email domain and the issuer are the same domain, then the record would be:
 
 ```
-email._web-identity.issuer.example   TXT   iss=issuer.example
+_email-verification_.issuer.example   TXT   iss=issuer.example
 ```
 
 > Access to DNS records and email is often independent of website deployments. This provides assurance that an issuer is truly authorized as an insider with only access to websites on `issuer.example` could setup an issuer that would grant them verified emails for any email at `issuer.example`.
 
-- **3.2** - if an issuer is found, the browser loads `https://$ISSUER$/.well-known/web-identity` and MUST follow redirects to the same path but with a different subdomain of the Issuer.
+- **3.2** - if an issuer is found, the browser loads `https://$ISSUER$/.well-known/email-verification` and MUST follow redirects to the same path but with a different subdomain of the Issuer.
 
-For example, `https://issuer.example/.well-known/web-identity` may redirect to `https://accounts.issuer.example/.well-known/web-identity`. 
+For example, `https://issuer.example/.well-known/email-verification` may redirect to `https://accounts.issuer.example/.well-known/email-verification`. 
 
 
-- **3.3** - the browser confirms that the `.well-known/web-identity` file contains JSON that includes the following properties:
+- **3.3** - the browser confirms that the `.well-known/email-verification` file contains JSON that includes the following properties:
 
 - *issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
@@ -123,12 +104,12 @@ For example, `https://issuer.example/.well-known/web-identity` may redirect to `
 
 Each of these properties MUST include the issuer domain as the root of their hostname. 
 
-Following is an example `.well-known/web-identity` file
+Following is an example `.well-known/email-verification` file
 
 ```json
 {
-  "issuance_endpoint": "https://accounts.issuer.example/web-identity/issuance",
-  "jwks_uri": "https://accounts.issuer.example/web-identity/jwks.json",
+  "issuance_endpoint": "https://accounts.issuer.example/email-verification/issuance",
+  "jwks_uri": "https://accounts.issuer.example/email-verification/jwks",
   "signing_alg_values_supported": ["EdDSA", "RS256"]
 }
 ```
@@ -137,6 +118,7 @@ Following is an example `.well-known/web-identity` file
 
   - *aud* - the issuer
   - *iat* - time when the JWT was signed
+  - *jti* - unique identifier for the token
   - *nonce* - nonce provided by the RP
   - *email* - email address to be verified 
 
@@ -170,7 +152,7 @@ An example payload
 - **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/x-www-form-urlencoded` containing a `request_token` parameter set to the signed JWT. 
 
 ```bash
-POST /web-identity/issuance HTTP/1.1
+POST /email-verification/issuance HTTP/1.1
 Host: accounts.issuer.example
 Cookie: session=...
 Content-Type: application/x-www-form-urlencoded
@@ -197,7 +179,7 @@ On receipt of a token request:
   - **Header**: MUST contain 
     - `alg`: signing algorithm (SHOULD match the algorithm from the request_token)
     - `kid`: key identifier of key used to sign
-    - `typ` set to "web-identity+sd-jwt"
+    - `typ` set to "evp+sd-jwt"
   - **Payload**: MUST contain the following claims:
     - `iss`: the issuer identifier
     - `iat`: issued at time 
@@ -212,7 +194,7 @@ On receipt of a token request:
   {
     "alg": "EdDSA",
     "kid": "2024-08-19",
-    "typ": "web-identity+sd-jwt"
+    "typ": "evp+sd-jwt"
   }
   ```
 
@@ -319,14 +301,14 @@ The browser SHOULD handle these errors gracefully by either prompting the user t
 
 ## 5. Token Presentation
 
-On receiving the ance`:
+On receiving the `issuance_token`:
 
 - **5.1** - the browser MUST verify the SD-JWT per (SD-JWT spec) by:
 
   - parsing the SD-JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
-  - parsing the email domain from the `email` claim and looking up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
-  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/web-identity` file
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/email-verification` file
   - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
   - verifying the `iat` claim is within 60 seconds of the current time
   - verifying the `email` claim matches the email address the user selected
@@ -365,14 +347,17 @@ On receiving the ance`:
   }
   ```
 
-- **5.3** - the browser returns the `navigator.credentials.get()` call and `credential.token` is the SD-JWT+KB
+- **5.3** - the browser sets a TBD hidden field and fires the TBD event ...
 
-
-> Explore browser setting a hidden field instead so JS is not required
+> details TBD
 
 ## 6. Token Verification
 
-The RP web page now has a SD-JWT+KB and sends it with JS code to the RP server. The RP server MUST verify the SD-JWT+KB by:
+The RP web page now has the SD-JWT+KB from the event, and passes it to the RP server, or the token was posted to the RP server.
+
+> details TBD
+
+The RP server MUST verify the SD-JWT+KB by:
 
 - **6.1** - the RP server receives the SD-JWT+KB from the web page
 
@@ -389,8 +374,8 @@ The RP web page now has a SD-JWT+KB and sends it with JS code to the RP server. 
 - **6.4** - the RP verifies the SD-JWT by:
   - parsing the SD-JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
-  - parsing the email domain from the `email` claim and looking up the `TXT` record for `email._web-identity.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
-  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/web-identity` file
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/email-verification` file
   - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
   - verifying the `iss` claim exactly matches the issuer identifier from the DNS record
   - verifying the `iat` claim is within a reasonable time window
