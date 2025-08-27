@@ -49,7 +49,7 @@ User navigates to a site that will act as the RP.
 
 ```html
 
-<input autocomplete="email" nonce="h6s72ks8hct374sjusye8rH5Fws">
+<input autocomplete="email"  verification="an_element_id"  nonce="12345677890..random">
 
 ```
 
