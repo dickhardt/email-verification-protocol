@@ -100,7 +100,7 @@ For example, `https://issuer.example/.well-known/email-verification` may redirec
 
 - *issuance_endpoint* - the API endpoint the browser calls to obtain an SD-JWT
 - *jwks_uri* - the URL where the issuer provides its public keys to verify the SD-JWT
-- *signing_alg_values_supported* - OPTIONAL. JSON array containing a list of the JWS signing algorithms ("alg" values) supported by both the browser for request tokens and the issuer for issued tokens. The same algorithm MUST be used for both the `request_token` and ance` within a single issuance flow. Algorithm identifiers MUST be from the IANA "JSON Web Signature and Encryption Algorithms" registry. If omitted, "EdDSA" is the default. "EdDSA" SHOULD be included in the supported algorithms list. The value "none" MUST NOT be used.
+- *signing_alg_values_supported* - OPTIONAL. JSON array containing a list of the JWS signing algorithms ("alg" values) supported by both the browser for request tokens and the issuer for issued tokens. The same algorithm MUST be used for both the `request_token` and `issuance` within a single issuance flow. Algorithm identifiers MUST be from the IANA "JSON Web Signature and Encryption Algorithms" registry. If omitted, "EdDSA" is the default. "EdDSA" SHOULD be included in the supported algorithms list. The value "none" MUST NOT be used.
 
 Each of these properties MUST include the issuer domain as the root of their hostname. 
 
@@ -189,7 +189,7 @@ On receipt of a token request:
   - **Signature**: MUST be signed with the issuer's private key corresponding to a public key in the `jwks_uri` identified by `kid`
 
 
-  Example header:
+Example header:
   ```json
   {
     "alg": "EdDSA",
@@ -198,7 +198,7 @@ On receipt of a token request:
   }
   ```
 
-  Example payload:
+Example payload:
   ```json
   {
     "iss": "issuer.example",
@@ -214,7 +214,7 @@ On receipt of a token request:
     "email_verified": true
   }
   ```
-
+The resulting JWT has the `~` appended to it, making it a valid SD-JWT.
 
 - **4.3** - the issuer returns the SD-JWT to the browser as the value of `issuance_token` in an `application/json` response.
 
@@ -223,7 +223,7 @@ Example:
 HTTP/1.1 200 OK
 Content-Type: application/json
 
-{ance":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
+{"issuance_token":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
 ```
 
 ## 4.4 Error Responses
