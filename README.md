@@ -36,6 +36,7 @@ Verified Email Release: The user navigates to any website that requires a verifi
 5. [**Token Presentation**](#5-token-presentation)
 6. [**Token Verification**](#6-token-verification)
 
+
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -45,42 +46,41 @@ sequenceDiagram
     participant I as Issuer
     participant DNS as DNS
 
-    Note over U,I: Step 1: Email Request
+    Note over U,DNS: Step 1: Email Request
     U->>RP: Navigate to site
-    RP->>RPS: Page request
+    RP->>RPS: Nonce request
     RPS->>RPS: Generate nonce, bind to session
-    RPS->>RP: Return page with autocomplete input field and nonce
-    RP->>B: Display page with email input
+    RPS->>RP: Nonce
+    RP->>B: Display page 
 
-    Note over U,I: Step 2: Email Selection
+    Note over U,DNS: Step 2: Email Selection
     U->>RP: Focus on email input field
     RP->>B: Input field focused
     B->>U: Display email address list
     U->>B: Select email address
 
-    Note over U,I: Step 3: Token Request
+    Note over U,DNS: Step 3: Token Request
     B->>DNS: DNS TXT lookup<br/>_email-verification_.$EMAIL_DOMAIN
     DNS->>B: Return iss=issuer.example
     B->>I: GET /.well-known/email-verification
     I->>B: Return metadata
-    Note right of B: issuance_endpoint, jwks_uri, signing_alg_values_supported
     B->>B: Generate key pair<br/>Create request token
-    B->>I: POST /email-verification/issuance request_token=JWT...
+    B->>I: POST request_token=JWT...
 
-    Note over U,I: Step 4: Token Issuance
+    Note over U,DNS: Step 4: Token Issuance
     I->>I: Verify request
     I->>I: Generate SD-JWT
-    I->>B: HTTP 200 OK<br/><br/>{"issuance_token":"SD-JWT"}
+    I->>B: {"issuance_token":"SD-JWT"}
 
-    Note over U,I: Step 5: Token Presentation
+    Note over U,DNS: Step 5: Token Presentation
     B->>B: Verify SD-JWT
     B->>I: GET jwks_uri for public keys
     I->>B: Return JWKS
     B->>B: Create KB
-    B->>RP: Provide SD-JWT+KB token
+    B->>RP: Provide SD-JWT+KB
 
-    Note over U,I: Step 6: Token Verification
-    RP->>RPS: Send SD-JWT+KB token
+    Note over U,DNS: Step 6: Token Verification
+    RP->>RPS: Send SD-JWT+KB 
     RPS->>RPS: Parse SD-JWT+KB
     RPS->>DNS: DNS TXT lookup for email domain
     DNS->>RPS: Return iss=issuer.example
@@ -101,7 +101,7 @@ User navigates to a site that will act as the RP.
 
 - **1.1** - the RP Server generates a nonce and binds the nonce to the session.
 
-- **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to "email" and the `nonce` property set the the nonce. Following is an example of the HTML in the page:
+- **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to `"email"` and the `nonce` property set the the nonce. Following is an example of the HTML in the page:
 
 ```html
 
@@ -114,7 +114,7 @@ User navigates to a site that will act as the RP.
 
 ## 2. Email Selection 
 
-- **2.1** - User focusses on input field with `autocomplete="email web-identity"`
+- **2.1** - User focusses on email input field 
 
 - **2.2** - The browser displays the list of email addresses it has for the user. 
 
@@ -122,26 +122,26 @@ User navigates to a site that will act as the RP.
 
 - **2.3** - User selects an email address from browser selection, or the user types an email into the field.
 
-> If we allow user to type in a field we allow learning about new emails, or if the user does not want the browser to remember emails, the Email Verification Protocol is still available. In the future when we allow the user to use a passkey to authenticate to the issuer, the user can provide a verified email at a public computer by authenticating with their passkey and not enter any secrets into the public computer.
+> Future: allow user to type in a field so we learn about new emails, or if the user does not want the browser to remember emails, the Email Verification Protocol is still available. In the future when we allow the user to use a passkey to authenticate to the issuer, the user can provide a verified email to a web application using a public computer by authenticating with their passkey and not enter any secrets into the public computer.
 
 
 ## 3. Token Request
 
 If the RP has performed (1):
 
-- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN`. The contents of the record is MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `_email-verification_.$EMAIL_DOMAIN`.
+- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN`. The contents of the record MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `_email-verification_.$EMAIL_DOMAIN`.
 
 example record
 
-```
+```bash
 _email-verification_.email-domain.example   TXT   iss=issuer.example
 ```
 
-This record confirms that `email-domain.example` has delegated email verification to the issuer `issuer.example`.
+This record states that `email-domain.example` has delegated email verification to the issuer `issuer.example`.
 
 If the email domain and the issuer are the same domain, then the record would be:
 
-```
+```bash
 _email-verification_.issuer.example   TXT   iss=issuer.example
 ```
 
