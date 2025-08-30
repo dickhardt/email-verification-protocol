@@ -149,13 +149,14 @@ An example payload
 ```
 
 
-- **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/x-www-form-urlencoded` containing a `request_token` parameter set to the signed JWT. 
+- **3.5** - the browser POSTs to the `issuance_endpoint` of the issuer with 1P cookies with a content-type of `application/x-www-form-urlencoded` containing a `request_token` parameter set to the signed JWT and the `Sec-Fetch-Dest` header set to `email-verification`. 
 
 ```bash
 POST /email-verification/issuance HTTP/1.1
 Host: accounts.issuer.example
 Cookie: session=...
 Content-Type: application/x-www-form-urlencoded
+Sec-Fetch-Dest: email-verification
 
 request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC...
 ```
@@ -164,7 +165,12 @@ request_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVC...
 
 On receipt of a token request:
 
-- **4.1** - the issuer MUST verify the request_token by:
+- **4.1** - the issuer MUST verify the request headers:
+
+  - `Content-Type` is `application/x-www-form-urlencoded`
+  - `Sec-Fetch-Dest` is `email-verification`
+
+- **4.2** - the issuer MUST verify the request_token by:
 
   - parsing the JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `jwk` and `alg` fields from the JWT header, and the `aud`, `iat`, `email`, and `nonce` claims from the payload
@@ -174,7 +180,7 @@ On receipt of a token request:
   - verifying the `email` claim contains a syntactically valid email address
 
 
-- **4.2** - the issuer checks if the cookies sent represent a logged in user, and if the logged in user has control of the email provided in the request_token. If so the issuer generates an SD-JWT with the following properties:
+- **4.3** - the issuer checks if the cookies sent represent a logged in user, and if the logged in user has control of the email provided in the request_token. If so the issuer generates an SD-JWT with the following properties:
 
   - **Header**: MUST contain 
     - `alg`: signing algorithm (SHOULD match the algorithm from the request_token)
@@ -216,7 +222,7 @@ Example payload:
   ```
 The resulting JWT has the `~` appended to it, making it a valid SD-JWT.
 
-- **4.3** - the issuer returns the SD-JWT to the browser as the value of `issuance_token` in an `application/json` response.
+- **4.4** - the issuer returns the SD-JWT to the browser as the value of `issuance_token` in an `application/json` response.
 
 Example:
 ```bash
@@ -226,11 +232,27 @@ Content-Type: application/json
 {"issuance_token":"eyJhbGciOiJFZERTQSIsImtpZCI6IjIwMjQtMDgtMTkiLCJ0eXAiOiJ3ZWItaWRlbnRpdHkrc2Qtand0In0..."}
 ```
 
-## 4.4 Error Responses
+## 4.5 Error Responses
 
 If the issuer cannot process the token request successfully, it MUST return an appropriate HTTP status code with a JSON error response containing an `error` field and optionally an `error_description` field.
 
-### 4.4.1 Authentication Required
+
+### 4.5.1 Invalid Request Headers
+
+When the request does not include the required headers per [section 4.1](#41):
+
+**HTTP 400 Bad Request**
+```json
+{
+  "error": "invalid-request",
+  "error_description": "Missing or invalid Content-Type or Sec-Fetch-Dest header"
+}
+```
+
+The `error_description` SHOULD specify which header is missing or invalid.
+
+
+### 4.5.2 Authentication Required
 
 When the request lacks valid authentication cookies, contains expired/invalid cookies, or the authenticated user does not have control of the requested email address:
 
@@ -242,7 +264,7 @@ When the request lacks valid authentication cookies, contains expired/invalid co
 }
 ```
 
-### 4.4.2 Invalid Parameters
+### 4.5.3 Invalid Parameters
 
 When the `request_token` is malformed, missing required claims, or contains invalid values:
 
@@ -261,7 +283,7 @@ Specific cases include:
 - Missing or invalid `iat` claim (outside 60 second window)
 - Missing or invalid `jwk` in header
 
-### 4.4.3 Invalid Token
+### 4.5.4 Invalid Token
 
 When the `request_token` signature verification fails or the token structure is invalid:
 
@@ -273,7 +295,7 @@ When the `request_token` signature verification fails or the token structure is 
 }
 ```
 
-### 4.4.4 Server Errors
+### 4.5.5 Server Errors
 
 For internal server errors or temporary unavailability:
 
