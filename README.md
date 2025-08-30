@@ -42,57 +42,54 @@ sequenceDiagram
     participant B as Browser
     participant RP as RP Page
     participant RPS as RP Server
-    participant DNS as DNS
     participant I as Issuer
+    participant DNS as DNS
 
     Note over U,I: Step 1: Email Request
     U->>RP: Navigate to site
     RP->>RPS: Page request
     RPS->>RPS: Generate nonce, bind to session
-    RPS->>RP: Return page with input field<br/>autocomplete="email" nonce="..."
-    RP->>U: Display page with email input
+    RPS->>RP: Return page with autocomplete input field and nonce
+    RP->>B: Display page with email input
 
     Note over U,I: Step 2: Email Selection
     U->>RP: Focus on email input field
     RP->>B: Input field focused
     B->>U: Display email address list
     U->>B: Select email address
-    B->>RP: Email address selected
 
     Note over U,I: Step 3: Token Request
     B->>DNS: DNS TXT lookup<br/>_email-verification_.$EMAIL_DOMAIN
     DNS->>B: Return iss=issuer.example
     B->>I: GET /.well-known/email-verification
-    I->>B: Return metadata<br/>{issuance_endpoint, jwks_uri, signing_alg_values_supported}
-    B->>B: Generate key pair<br/>Create signed JWT with {aud, iat, jti, nonce, email}
-    B->>I: POST /email-verification/issuance<br/>Content-Type: application/x-www-form-urlencoded<br/>Sec-Fetch-Dest: email-verification<br/>Cookie: session=...<br/>request_token=JWT...
+    I->>B: Return metadata
+    Note right of B: issuance_endpoint, jwks_uri, signing_alg_values_supported
+    B->>B: Generate key pair<br/>Create request token
+    B->>I: POST /email-verification/issuance request_token=JWT...
 
     Note over U,I: Step 4: Token Issuance
-    I->>I: Verify request headers<br/>Verify request_token JWT<br/>Check user authentication & email control
-    I->>I: Generate SD-JWT with<br/>{iss, iat, cnf, email, email_verified}
-    I->>B: HTTP 200 OK<br/>Content-Type: application/json<br/>{"issuance_token":"SD-JWT~"}
+    I->>I: Verify request
+    I->>I: Generate SD-JWT
+    I->>B: HTTP 200 OK<br/><br/>{"issuance_token":"SD-JWT"}
 
     Note over U,I: Step 5: Token Presentation
-    B->>B: Verify SD-JWT signature & claims
-    B->>DNS: Re-verify DNS TXT record
-    DNS->>B: Confirm iss=issuer.example
+    B->>B: Verify SD-JWT
     B->>I: GET jwks_uri for public keys
     I->>B: Return JWKS
-    B->>B: Create KB-JWT with<br/>{aud, nonce, iat, sd_hash}<br/>Form SD-JWT+KB = SD-JWT~KB-JWT
-    B->>RP: Provide SD-JWT+KB token<br/>(via hidden field & event)
+    B->>B: Create KB
+    B->>RP: Provide SD-JWT+KB token
 
     Note over U,I: Step 6: Token Verification
     RP->>RPS: Send SD-JWT+KB token
-    RPS->>RPS: Parse SD-JWT+KB<br/>Separate SD-JWT and KB-JWT
-    RPS->>RPS: Verify KB-JWT:<br/>- aud matches RP origin<br/>- nonce matches session<br/>- sd_hash matches SD-JWT hash
+    RPS->>RPS: Parse SD-JWT+KB
     RPS->>DNS: DNS TXT lookup for email domain
     DNS->>RPS: Return iss=issuer.example
     RPS->>I: GET /.well-known/email-verification
     I->>RPS: Return metadata with jwks_uri
     RPS->>I: GET jwks_uri
     I->>RPS: Return JWKS public keys
-    RPS->>RPS: Verify SD-JWT:<br/>- signature with issuer public key<br/>- iss matches DNS record<br/>- email_verified is true
-    RPS->>RPS: Verify KB-JWT signature<br/>using public key from SD-JWT cnf claim
+    RPS->>RPS: Verify SD-JWT
+    RPS->>RPS: Verify KB-JWT
     RPS->>RP: Email verification complete
 ```
 
