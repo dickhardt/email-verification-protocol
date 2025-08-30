@@ -60,7 +60,7 @@ sequenceDiagram
     U->>B: Select email address
 
     Note over U,DNS: Step 3: Token Request
-    B->>DNS: DNS TXT lookup<br/>_email-verification_.$EMAIL_DOMAIN
+    B->>DNS: DNS TXT lookup<br/>_email-verification.$EMAIL_DOMAIN
     DNS->>B: Return iss=issuer.example
     B->>I: GET /.well-known/email-verification
     I->>B: Return metadata
@@ -129,12 +129,12 @@ User navigates to a site that will act as the RP.
 
 If the RP has performed (1):
 
-- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN`. The contents of the record MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `_email-verification_.$EMAIL_DOMAIN`.
+- **3.1** - the browser parses the email domain ($EMAIL_DOMAIN) from the email address, looks up the `TXT` record for `_email-verification.$EMAIL_DOMAIN`. The contents of the record MUST start with `iss=` followed by the issuer identifier. There MUST be only one `TXT` record for `_email-verification.$EMAIL_DOMAIN`.
 
 example record
 
 ```bash
-_email-verification_.email-domain.example   TXT   iss=issuer.example
+_email-verification.email-domain.example   TXT   iss=issuer.example
 ```
 
 This record states that `email-domain.example` has delegated email verification to the issuer `issuer.example`.
@@ -142,7 +142,7 @@ This record states that `email-domain.example` has delegated email verification 
 If the email domain and the issuer are the same domain, then the record would be:
 
 ```bash
-_email-verification_.issuer.example   TXT   iss=issuer.example
+_email-verification.issuer.example   TXT   iss=issuer.example
 ```
 
 > Access to DNS records and email is often independent of website deployments. This provides assurance that an issuer is truly authorized as an insider with only access to websites on `issuer.example` could setup an issuer that would grant them verified emails for any email at `issuer.example`.
@@ -372,7 +372,7 @@ On receiving the `issuance_token`:
 
   - parsing the SD-JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
-  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
   - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/email-verification` file
   - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
   - verifying the `iat` claim is within 60 seconds of the current time
@@ -439,7 +439,7 @@ The RP server MUST verify the SD-JWT+KB by:
 - **6.4** - the RP verifies the SD-JWT by:
   - parsing the SD-JWT into header, payload, and signature components
   - confirming the presence of, and extracting the `alg` and `kid` fields from the SD-JWT header, and the `iss`, `iat`, `cnf`, `email`, and `email_verified` claims from the payload
-  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification_.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
+  - parsing the email domain from the `email` claim and looking up the `TXT` record for `_email-verification.$EMAIL_DOMAIN` to verify the `iss` claim matches the issuer identifier in the DNS record
   - fetching the issuer's public keys from the `jwks_uri` specified in the `.well-known/email-verification` file
   - verifying the SD-JWT signature using the public key identified by `kid` from the JWKS with the `alg` algorithm
   - verifying the `iss` claim exactly matches the issuer identifier from the DNS record
