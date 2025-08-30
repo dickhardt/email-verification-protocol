@@ -4,23 +4,21 @@ Verifying control of an email address is a frequent activity on the web today an
 
 Verification is performed by either:
 
-1) sending the user a link they click on or a verification code. This requires the user to switch from the application they are using to their email address and having to wait for the email arrive, and then perform the verification action. This friction often causes drop off in users completing the task.
-2) the user logs in with a social login provider such as Apple or Google that provide a verified email address. This requires the application to have set up a relationship with each social provider, and the user to be using one of those services and wanting to share the additional profile information that is also provided in the OpenID Connect flow.
+1) Sending the user a link they click on or a verification code. This requires the user to switch from the application they are using to their email address and having to wait for the email arrive, and then perform the verification action. This friction often causes drop off in users completing the task. There are privacy implications as the email transmission informs the mail service the applications the user is using and when they used them.
 
-The Email Verification Protocol enables an application to obtain a verified email address from any Issuer the user wishes to use without any prior registration by the application, and to only share the verified email address improving the privacy aspects of the interaction.
+2) The user logs in with a social login provider such as Apple or Google that provide a verified email address. This requires the application to have set up a relationship with each social provider, and the user to be using one of those services and wanting to share the additional profile information that is also provided in the OpenID Connect flow.
 
-The protocol aligns with the issuer->holder->verifier pattern where the holder is the browser and the verifier is the website requesting a verified email address. The issuer can be any service with a DNS record that the email domain delegates as being authoritative for the email domain.
+The Email Verification Protocol enables a web application to obtain a verified email address without sending an email, and without the user leaving the web page they are on. To enable the functionality, the mail domain delegates email verification to an issuer that has authentication cookies for the user. When the user provides an email to the HTML form field, the browser calls the issuer passing authentication cookies, the issuer returns a token, which the browser verifies and updates and provides to the web application. The web application then verifies the token and has a verified email address for the user.
+
+User privacy is enhanced as the issuer does not learn which web application is making the request as the request is mediated by the browser. 
 
 
 ## Key Concepts
 
 
-- SD-JWT: A JWT per [SD-JWT link] that is signed by the Issuer and contains an email claim is bound to a public key managed by the . Non-email claims are permitted but not addressed in this doc. Using an SD-JWT blinds the Issuer to the RP that is requesting the verified email and allows separation between issuance of the token by the Issuer to the browser(holder) and presentation of the token to the RP (verifier).
+- SD-JWT+KB token: The selective disclosure json web token with key binding is specified in [](). This protocol does not use the selective disclosure features, it uses the key binding feature which enables a separation of token issuance and token presentation. The SD-JWT+KB is a token composed of two JWTs separated by the `~` character. The first JWT is an SD-JWT aka the issuance token and is signed by the issuer and contains the `email` and `email_verified` claims for the user, and the public key used by the browser to make the request. The second JWT is a KB token and is signed by the browser and contains a hash of the first JWT. The resulting SD-JWT+KB is the presentation token, and enables the application to verify the issuer provided the email address for the user without the issuer learning about the specific application
 
-- Issuer: a service that exposes a `issuance_endpoint` that is called to obtain an SD-JWT, and a `jwt_uri` that contains the public keys used to verify the SD-JWT. The Issuer is identified by its domain, an eTLD+1 (eg `issuer.example`). The hostname in all URLs from the Issuer's metadata MUST end with the Issuer's domain. This identifier is what binds the SD-JWT, the DNS delegation, with the Issuer.
-
-> Having a crisp identifier and a format different than OpenID Connect tokens (no leading https://) simplifies verification and has clean bindings between all the services, DNS record, and token.
-
+- Issuer: The service that verifies the user controls an email address. A DNS record for the email domain delegates email verification to the issuer. The issuer serves a `.well-known/email-verification` metadata file that contains its `issuance_endpoint` that is called to obtain an issuance token, and its `jwks_uri` that points to the JWKS file containing the public keys used to verify the SD-JWT. The issuer is identified by its domain, an eTLD+1 (eg `issuer.example`). The hostname in all URLs from the issuer's metadata MUST end with the issuer's domain. This identifier is what binds the SD-JWT, the DNS delegation, with the issuer.
 
 ## User Experience
 
@@ -28,7 +26,6 @@ Verified Email Release: The user navigates to any website that requires a verifi
 
 > Are emails that can be verified decorated by the browser in the autocomplete UI?
 > What UX is presented to the user when the app gets a verified email so the user knows it is already verified?
-
 
 # Processing Steps
 
@@ -38,6 +35,68 @@ Verified Email Release: The user navigates to any website that requires a verifi
 4. [**Token Issuance**](#4-token-issuance)
 5. [**Token Presentation**](#5-token-presentation)
 6. [**Token Verification**](#6-token-verification)
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant B as Browser
+    participant RP as RP Page
+    participant RPS as RP Server
+    participant DNS as DNS
+    participant I as Issuer
+
+    Note over U,I: Step 1: Email Request
+    U->>RP: Navigate to site
+    RP->>RPS: Page request
+    RPS->>RPS: Generate nonce, bind to session
+    RPS->>RP: Return page with input field<br/>autocomplete="email" nonce="..."
+    RP->>U: Display page with email input
+
+    Note over U,I: Step 2: Email Selection
+    U->>RP: Focus on email input field
+    RP->>B: Input field focused
+    B->>U: Display email address list
+    U->>B: Select email address
+    B->>RP: Email address selected
+
+    Note over U,I: Step 3: Token Request
+    B->>DNS: DNS TXT lookup<br/>_email-verification_.$EMAIL_DOMAIN
+    DNS->>B: Return iss=issuer.example
+    B->>I: GET /.well-known/email-verification
+    I->>B: Return metadata<br/>{issuance_endpoint, jwks_uri, signing_alg_values_supported}
+    B->>B: Generate key pair<br/>Create signed JWT with {aud, iat, jti, nonce, email}
+    B->>I: POST /email-verification/issuance<br/>Content-Type: application/x-www-form-urlencoded<br/>Sec-Fetch-Dest: email-verification<br/>Cookie: session=...<br/>request_token=JWT...
+
+    Note over U,I: Step 4: Token Issuance
+    I->>I: Verify request headers<br/>Verify request_token JWT<br/>Check user authentication & email control
+    I->>I: Generate SD-JWT with<br/>{iss, iat, cnf, email, email_verified}
+    I->>B: HTTP 200 OK<br/>Content-Type: application/json<br/>{"issuance_token":"SD-JWT~"}
+
+    Note over U,I: Step 5: Token Presentation
+    B->>B: Verify SD-JWT signature & claims
+    B->>DNS: Re-verify DNS TXT record
+    DNS->>B: Confirm iss=issuer.example
+    B->>I: GET jwks_uri for public keys
+    I->>B: Return JWKS
+    B->>B: Create KB-JWT with<br/>{aud, nonce, iat, sd_hash}<br/>Form SD-JWT+KB = SD-JWT~KB-JWT
+    B->>RP: Provide SD-JWT+KB token<br/>(via hidden field & event)
+
+    Note over U,I: Step 6: Token Verification
+    RP->>RPS: Send SD-JWT+KB token
+    RPS->>RPS: Parse SD-JWT+KB<br/>Separate SD-JWT and KB-JWT
+    RPS->>RPS: Verify KB-JWT:<br/>- aud matches RP origin<br/>- nonce matches session<br/>- sd_hash matches SD-JWT hash
+    RPS->>DNS: DNS TXT lookup for email domain
+    DNS->>RPS: Return iss=issuer.example
+    RPS->>I: GET /.well-known/email-verification
+    I->>RPS: Return metadata with jwks_uri
+    RPS->>I: GET jwks_uri
+    I->>RPS: Return JWKS public keys
+    RPS->>RPS: Verify SD-JWT:<br/>- signature with issuer public key<br/>- iss matches DNS record<br/>- email_verified is true
+    RPS->>RPS: Verify KB-JWT signature<br/>using public key from SD-JWT cnf claim
+    RPS->>RP: Email verification complete
+```
+
+
 
 ## 1. Email Request
 
@@ -237,22 +296,26 @@ Content-Type: application/json
 If the issuer cannot process the token request successfully, it MUST return an appropriate HTTP status code with a JSON error response containing an `error` field and optionally an `error_description` field.
 
 
-### 4.5.1 Invalid Request Headers
+### 4.5.1 Invalid Content-Type Header
 
-When the request does not include the required headers per [section 4.1](#41):
+When the request does not include the required `Content-Type: application/x-www-form-urlencoded` header, the server MUST return the 415 HTTP response code
+
+
+### 4.5.2 Invalid Sec-Fetch-Dest Header
+
+When the request does not include the required `Sec-Fetch-Dest: email-verification` header:
 
 **HTTP 400 Bad Request**
 ```json
 {
   "error": "invalid-request",
-  "error_description": "Missing or invalid Content-Type or Sec-Fetch-Dest header"
+  "error_description": "Missing or invalid Sec-Fetch-Dest header"
 }
 ```
 
-The `error_description` SHOULD specify which header is missing or invalid.
+The `error_description` SHOULD specify that the Sec-Fetch-Dest header is missing or invalid.
 
-
-### 4.5.2 Authentication Required
+### 4.5.3 Authentication Required
 
 When the request lacks valid authentication cookies, contains expired/invalid cookies, or the authenticated user does not have control of the requested email address:
 
@@ -264,7 +327,7 @@ When the request lacks valid authentication cookies, contains expired/invalid co
 }
 ```
 
-### 4.5.3 Invalid Parameters
+### 4.5.4 Invalid Parameters
 
 When the `request_token` is malformed, missing required claims, or contains invalid values:
 
@@ -276,14 +339,7 @@ When the `request_token` is malformed, missing required claims, or contains inva
 }
 ```
 
-Specific cases include:
-- Missing or invalid `email` claim
-- Missing or invalid `nonce` claim  
-- Missing or invalid `aud` claim that doesn't match the issuer identifier
-- Missing or invalid `iat` claim (outside 60 second window)
-- Missing or invalid `jwk` in header
-
-### 4.5.4 Invalid Token
+### 4.5.5 Invalid Token
 
 When the `request_token` signature verification fails or the token structure is invalid:
 
@@ -295,7 +351,7 @@ When the `request_token` signature verification fails or the token structure is 
 }
 ```
 
-### 4.5.5 Server Errors
+### 4.5.6 Server Errors
 
 For internal server errors or temporary unavailability:
 
@@ -307,16 +363,6 @@ For internal server errors or temporary unavailability:
 }
 ```
 
-### Error Response Requirements
-
-All error responses MUST:
-- Use appropriate HTTP status codes (400, 401, 500, etc.)
-- Include `Content-Type: application/json` header
-- Include proper CORS headers to allow browser access
-- Contain an `error` field with a machine-readable error code
-- Optionally contain an `error_description` field with human-readable details
-
-The browser SHOULD handle these errors gracefully by either prompting the user to authenticate with the issuer (when that is specified)  or falling back to traditional email verification methods.
 
 > In a future version of this spec, the issuer could prompt the user to login via a URL or with a Passkey request.
 
