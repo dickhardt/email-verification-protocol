@@ -104,12 +104,26 @@ User navigates to a site that will act as the RP.
 - **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to `"email"` and the `nonce` property set the the nonce. Following is an example of the HTML in the page:
 
 ```html
+<input id="email"
+       type="email"
+       autocomplete="email"
+       nonce="12345677890..random">
+<script>
+const input = document.getElementById('email')
 
-<input autocomplete="email"  verification="an_element_id"  nonce="12345677890..random">
+input.addEventListener('emailverified', e => {
+  // e.presentationToken is SD-JWT+KB
+  console.log({
+      presentationToken: e.presentationToken,
+      // convenience only — don’t trust without server verification
+      email: e.email,
+  })
+})
+</script>
 
 ```
 
-> The exact HTML markup is still in flux.
+> Authors are exploring alternative HTML and JS API approaches
 
 
 ## 2. Email Selection 
