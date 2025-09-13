@@ -111,12 +111,10 @@ User navigates to a site that will act as the RP.
 <script>
 const input = document.getElementById('email')
 
-input.addEventListener('emailverified', e => {
+input.addEventListener('verified', e => {
   // e.presentationToken is SD-JWT+KB
   console.log({
-      presentationToken: e.presentationToken,
-      // convenience only — don’t trust without server verification
-      email: e.email,
+      presentationToken: e.presentationToken
   })
 })
 </script>
