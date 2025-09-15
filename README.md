@@ -101,7 +101,7 @@ User navigates to a site that will act as the RP.
 
 - **1.1** - the RP Server generates a nonce and binds the nonce to the session.
 
-- **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to `"email"` and the `nonce` property set the the nonce. Following is an example of the HTML in the page:
+- **1.2** - the RP Server returns a page that has an input field with the `autocomplete` property set to `"email"` and the `nonce` property set the the nonce. If the browser receives an `issuance_token` per 4.4 below, then it sends a `emailverifed` event that has a `presentationToken` property. Following is an example of the HTML in the page:
 
 ```html
 <input id="email"
@@ -111,7 +111,7 @@ User navigates to a site that will act as the RP.
 <script>
 const input = document.getElementById('email')
 
-input.addEventListener('verified', e => {
+input.addEventListener('emailverified', e => {
   // e.presentationToken is SD-JWT+KB
   console.log({
       presentationToken: e.presentationToken
